@@ -1,1 +1,6 @@
 streamlit
+supabase
+crewai
+langchain_community
+pypdf
+litellm
