@@ -89,12 +89,28 @@ if not st.session_state.logged_in:
 with st.sidebar:
     st.title(f"👋 {st.session_state.user}")
     st.metric("Dein Guthaben", f"{st.session_state.bal:.2f} €")
+    
     if st.button("🔄 Guthaben aktualisieren"):
         res = get_user(st.session_state.user)
-        if res: st.session_state.bal = float(res["balance"]); st.rerun()
+        if res: 
+            st.session_state.bal = float(res["balance"])
+            st.rerun()
+
     st.divider()
-    gk = st.text_input("Groq API Key", type="password", help="Dein Key von console.groq.com")
-    tk = st.text_input("Tavily API Key", type="password", help="Dein Key von tavily.com")
+    st.subheader("💳 Guthaben aufladen")
+    
+    # ERSETZE DIESE URL DURCH DEINEN STRIPE PAYMENT LINK
+    stripe_url = "https://buy.stripe.com/test_7sYfZg6aF7iX0kkeKN1oI00" 
+    
+    # Wir hängen die E-Mail an, damit wir wissen, wer bezahlt hat
+    checkout_url = f"{stripe_url}?prefilled_email={st.session_state.user}"
+    
+    st.link_button("10,00 € aufladen", checkout_url, use_container_width=True)
+    st.caption("Sichere Zahlung via Stripe")
+
+    st.divider()
+    gk = st.text_input("Groq API Key", type="password")
+    tk = st.text_input("Tavily API Key", type="password")
     if st.button("Abmelden"): 
         st.session_state.logged_in = False
         st.rerun()
