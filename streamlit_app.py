@@ -8,11 +8,11 @@ from langchain_community.tools.tavily_search import TavilySearchResults
 from pypdf import PdfReader
 
 # =================================================================
-# 1. CLOUD-VERBINDUNG (Liest deine Secrets)
+# 1. CLOUD-VERBINDUNG (Secrets Management)
 # =================================================================
 def connect_supabase():
     try:
-        # Greift auf die Advanced Settings -> Secrets zu
+        # Diese Werte müssen in den Advanced Settings -> Secrets der App stehen
         url = st.secrets["SUPABASE_URL"]
         key = st.secrets["SUPABASE_KEY"]
         return create_client(url, key)
@@ -21,7 +21,7 @@ def connect_supabase():
 
 supabase = connect_supabase()
 
-# --- DB LOGIK ---
+# --- DATENBANK LOGIK ---
 def get_user(email):
     if not supabase: return None
     try:
@@ -44,13 +44,14 @@ def update_bal(email, bal):
         except: pass
 
 # =================================================================
-# 2. UI & LOGIN
+# 2. UI & LOGIN BEREICH
 # =================================================================
 st.set_page_config(page_title="Calvin Pro Business", layout="wide")
 
 if not supabase:
     st.title("🤖 Calvin Cloud Setup")
-    st.error("⚠️ Datenbank nicht verbunden. Prüfe die 'Secrets' in den Streamlit Advanced Settings!")
+    st.error("⚠️ Datenbank nicht verbunden. Bitte prüfe die 'Secrets' in den Streamlit Advanced Settings!")
+    st.info("Format: SUPABASE_URL = '...' und SUPABASE_KEY = '...'")
     st.stop()
 
 if 'logged_in' not in st.session_state: st.session_state.logged_in = False
@@ -83,38 +84,39 @@ if not st.session_state.logged_in:
     st.stop()
 
 # =================================================================
-# 3. DASHBOARD & SIDEBAR
+# 3. SIDEBAR & BENUTZER-DASHBOARD
 # =================================================================
 with st.sidebar:
     st.title(f"👋 {st.session_state.user}")
     st.metric("Dein Guthaben", f"{st.session_state.bal:.2f} €")
-    if st.button("🔄 Guthaben laden"):
+    if st.button("🔄 Guthaben aktualisieren"):
         res = get_user(st.session_state.user)
         if res: st.session_state.bal = float(res["balance"]); st.rerun()
     st.divider()
-    gk = st.text_input("Groq Key", type="password")
-    tk = st.text_input("Tavily Key", type="password")
+    gk = st.text_input("Groq API Key", type="password", help="Dein Key von console.groq.com")
+    tk = st.text_input("Tavily API Key", type="password", help="Dein Key von tavily.com")
     if st.button("Abmelden"): 
         st.session_state.logged_in = False
         st.rerun()
 
-st.title("🤖 Calvin Engine v2.2 (Cloud)")
+st.title("🤖 Calvin Engine v2.2 (Cloud Live)")
 prompt = st.text_area("Was soll Calvin analysieren?", placeholder="Geben Sie hier Ihren Auftrag ein...", height=150)
 
 # =================================================================
-# 4. TOOLS (Analysten-Fähigkeiten)
+# 4. KI-TOOLS (Agenten-Fähigkeiten)
 # =================================================================
 
 @tool("search_tool")
 def search_tool(q: str):
     """Sucht im Internet nach aktuellen Daten und Informationen."""
+    # Tavily nutzt den Key aus der Umgebungsvariable (wird beim Start gesetzt)
     return TavilySearchResults(api_key=os.environ.get("TAVILY_API_KEY")).run(q)
 
 @tool("pdf_reader_tool")
 def pdf_reader_tool(pdf_path: str):
-    """Extrahiert Text aus PDF-Dateien für die Analyse (Cloud-optimiert)."""
+    """Extrahiert Text aus PDF-Dateien für die Analyse (Cloud-kompatibel)."""
     try:
-        # Pfad-Bereinigung (Wichtig für Windows-Cloud-Wechsel)
+        # Bereinigung des Pfades
         clean_path = pdf_path.strip().replace('"', '').replace("'", "").replace('\\', '/')
         if not os.path.exists(clean_path):
             return f"Fehler: Datei unter {clean_path} nicht gefunden."
@@ -122,56 +124,64 @@ def pdf_reader_tool(pdf_path: str):
         reader = PdfReader(clean_path)
         content = ""
         for i, page in enumerate(reader.pages):
-            if i > 5: break # Maximal 5 Seiten zur Token-Schonung
+            if i > 5: break # Token-Limit Schutz
             content += page.extract_text()
             
         return f"PDF-Inhalt (Auszug):\n\n{content[:4000]}"
     except Exception as e:
-        return f"Fehler beim Lesen der PDF: {str(e)}"
+        return f"Fehler beim PDF-Lesen: {str(e)}"
 
 # =================================================================
-# 5. START ENGINE
+# 5. AGENTEN-LOGIK & ABRECHNUNG
 # =================================================================
 if st.button("🚀 Auftrag zahlungspflichtig starten (0,02 €)"):
-    if st.session_state.bal < 0.02: st.error("Guthaben leer!")
-    elif not gk or not tk: st.warning("Bitte API-Keys in der Sidebar eingeben.")
+    if st.session_state.bal < 0.02: 
+        st.error("Guthaben leer! Bitte lade dein Konto auf.")
+    elif not gk or not tk: 
+        st.warning("Bitte gib beide API-Keys in der Sidebar ein.")
+    elif not prompt: 
+        st.warning("Bitte gib einen Auftrag für Calvin ein.")
     else:
-        with st.status("Calvin arbeitet...", expanded=True):
-            # API Keys für CrewAI verfügbar machen
+        with st.status("Calvin kontaktiert die Cloud-Engine...", expanded=True):
+            # API Keys in die Umgebung laden
             os.environ["GROQ_API_KEY"] = gk
             os.environ["TAVILY_API_KEY"] = tk
             
             try:
-                # KI-Modell (Groq Cloud)
+                # Das modernste Groq-Modell
                 llm = LLM(model="groq/llama-3.3-70b-versatile")
                 
-                # Agenten-Definition
-                agent = Agent(
-                    role='Senior Business Analyst', 
+                # Agenten-Setup
+                calvin_analyst = Agent(
+                    role='Senior Executive Consultant', 
                     goal=f'Löse die Aufgabe präzise: {prompt}', 
-                    backstory='Du bist ein KI-Berater, der Internet-Recherche und PDF-Analyse perfekt beherrscht.',
+                    backstory='Du bist ein hochbezahlter Analyst. Du nutzt Internet-Suche und PDF-Daten für perfekte Ergebnisse.',
                     tools=[search_tool, pdf_reader_tool], 
                     llm=llm,
                     allow_delegation=False
                 )
                 
-                # Task
-                task = Task(description=prompt, expected_output="Ein detaillierter Analyse-Bericht.", agent=agent)
+                # Auftrag definieren
+                analysis_task = Task(
+                    description=f"Kundenauftrag: {prompt}", 
+                    expected_output="Ein professioneller, gut strukturierter Ergebnisbericht.", 
+                    agent=calvin_analyst
+                )
                 
                 # Crew starten
-                crew = Crew(agents=[agent], tasks=[task])
-                res = crew.kickoff()
+                calvin_crew = Crew(agents=[calvin_analyst], tasks=[analysis_task])
+                final_result = calvin_crew.kickoff()
                 
-                # --- ABRECHNUNG ---
+                # --- ABRECHNUNG ÜBER SUPABASE ---
                 st.session_state.bal -= 0.02
                 update_bal(st.session_state.user, st.session_state.bal)
                 
-                st.subheader("Ergebnis:")
-                st.info(res.raw)
-                st.toast("Transaktion erfolgreich abgeschlossen.")
+                st.subheader("Ergebnis von Calvin:")
+                st.info(final_result.raw)
+                st.toast("Auftrag abgeschlossen: 0,02 € wurden abgerechnet.", icon="💸")
                 
             except Exception as e:
-                st.error(f"Technischer Fehler: {e}")
+                st.error(f"Ein technischer Fehler ist aufgetreten: {e}")
 
 st.divider()
-st.caption("Calvin Enterprise v2.2 | Full Toolset Enabled | Supabase Cloud Backend")
+st.caption("Calvin Enterprise v2.2 | Powered by Groq & Supabase | 24/7 Cloud Access")
