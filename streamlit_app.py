@@ -1,6 +1,5 @@
 import streamlit as st
 import os
-import shutil
 from supabase import create_client, Client
 from crewai import Agent, Task, Crew, Process, LLM
 from crewai.tools import tool
@@ -8,83 +7,54 @@ from langchain_community.tools.tavily_search import TavilySearchResults
 from pypdf import PdfReader
 
 # =================================================================
-# 1. CLOUD-VERBINDUNG (Secrets Management)
+# 1. DATABASE CONNECTION
 # =================================================================
-def connect_supabase():
+def init_db():
     try:
-        # Diese Werte müssen in den Advanced Settings -> Secrets der App stehen
-        url = st.secrets["SUPABASE_URL"]
-        key = st.secrets["SUPABASE_KEY"]
-        return create_client(url, key)
-    except Exception:
+        return create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
+    except:
         return None
 
-supabase = connect_supabase()
+supabase = init_db()
 
-# --- DATENBANK LOGIK ---
 def get_user(email):
     if not supabase: return None
     try:
-        res = supabase.table("profiles").select("*").eq("email", email).execute()
-        return res.data[0] if res.data else None
+        r = supabase.table("profiles").select("*").eq("email", email).execute()
+        return r.data[0] if r.data else None
     except: return None
 
-def signup(email, pwd):
-    if get_user(email): return False, "Konto existiert bereits."
-    try:
-        # Startguthaben 10.00 Euro für neue Cloud-Nutzer
-        supabase.table("profiles").insert({"email": email, "password": pwd, "balance": 10.00}).execute()
-        return True, "Registrierung erfolgreich! Bitte logge dich ein."
-    except Exception as e: return False, str(e)
-
-def update_bal(email, bal):
+def update_bal(email, val):
     if supabase:
-        try:
-            supabase.table("profiles").update({"balance": float(bal)}).eq("email", email).execute()
-        except: pass
+        supabase.table("profiles").update({"balance": float(val)}).eq("email", email).execute()
 
 # =================================================================
-# 2. UI & LOGIN BEREICH
+# 2. LOGIN & UI SETUP
 # =================================================================
 st.set_page_config(page_title="Calvin Pro Business", layout="wide")
-
-if not supabase:
-    st.title("🤖 Calvin Cloud Setup")
-    st.error("⚠️ Datenbank nicht verbunden. Bitte prüfe die 'Secrets' in den Streamlit Advanced Settings!")
-    st.info("Format: SUPABASE_URL = '...' und SUPABASE_KEY = '...'")
-    st.stop()
 
 if 'logged_in' not in st.session_state: st.session_state.logged_in = False
 if 'user' not in st.session_state: st.session_state.user = ""
 if 'bal' not in st.session_state: st.session_state.bal = 0.0
 
 if not st.session_state.logged_in:
-    st.title("🔐 Calvin Pro - Enterprise Cloud")
-    t1, t2 = st.tabs(["🔑 Login", "📝 Registrieren"])
+    st.title("🔐 Calvin Pro - Business Engine")
+    t1, t2 = st.tabs(["Login", "Registrierung"])
     with t1:
-        with st.form("login_form"):
-            u_in = st.text_input("E-Mail").lower().strip()
-            p_in = st.text_input("Passwort", type="password")
+        with st.form("l"):
+            u = st.text_input("E-Mail").lower().strip()
+            p = st.text_input("Passwort", type="password")
             if st.form_submit_button("Anmelden", use_container_width=True):
-                data = get_user(u_in)
-                if data and str(data["password"]) == p_in:
-                    st.session_state.logged_in, st.session_state.user = True, u_in
+                data = get_user(u)
+                if data and str(data["password"]) == p:
+                    st.session_state.logged_in, st.session_state.user = True, u
                     st.session_state.bal = float(data["balance"])
                     st.rerun()
-                else: st.error("Login-Daten inkorrekt.")
-    with t2:
-        with st.form("reg_form"):
-            nu, np = st.text_input("E-Mail").lower().strip(), st.text_input("Passwort", type="password")
-            if st.form_submit_button("Konto erstellen"):
-                if "@" in nu and len(np) >= 6:
-                    s, m = signup(nu, np)
-                    if s: st.success(m)
-                    else: st.error(m)
-                else: st.error("E-Mail ungültig oder Passwort zu kurz (min. 6 Zeichen).")
+                else: st.error("Login fehlgeschlagen.")
     st.stop()
 
 # =================================================================
-# 3. SIDEBAR & BENUTZER-DASHBOARD
+# 3. SIDEBAR (Stripe & Keys)
 # =================================================================
 with st.sidebar:
     st.title(f"👋 {st.session_state.user}")
@@ -99,14 +69,11 @@ with st.sidebar:
     st.divider()
     st.subheader("💳 Guthaben aufladen")
     
-    # ERSETZE DIESE URL DURCH DEINEN STRIPE PAYMENT LINK
-    stripe_url = "https://buy.stripe.com/test_7sYfZg6aF7iX0kkeKN1oI00" 
+    # DEIN STRIPE LINK (HIER REINKOPIEREN)
+    stripe_link = "https://buy.stripe.com/DEIN_CODE" 
+    checkout_url = f"{stripe_link}?prefilled_email={st.session_state.user}"
     
-    # Wir hängen die E-Mail an, damit wir wissen, wer bezahlt hat
-    checkout_url = f"{stripe_url}?prefilled_email={st.session_state.user}"
-    
-    st.link_button("10,00 € aufladen", checkout_url, use_container_width=True)
-    st.caption("Sichere Zahlung via Stripe")
+    st.link_button("🚀 10,00 € aufladen", checkout_url, use_container_width=True)
 
     st.divider()
     gk = st.text_input("Groq API Key", type="password")
@@ -115,89 +82,37 @@ with st.sidebar:
         st.session_state.logged_in = False
         st.rerun()
 
-st.title("🤖 Calvin Engine v2.2 (Cloud Live)")
-prompt = st.text_area("Was soll Calvin analysieren?", placeholder="Geben Sie hier Ihren Auftrag ein...", height=150)
-
 # =================================================================
-# 4. KI-TOOLS (Agenten-Fähigkeiten)
+# 4. MAIN ENGINE (Tools & Agent)
 # =================================================================
+st.title("🤖 Calvin Engine v2.3.1")
+prompt = st.text_area("Auftrag:", height=150)
 
 @tool("search_tool")
 def search_tool(q: str):
-    """Sucht im Internet nach aktuellen Daten und Informationen."""
-    # Tavily nutzt den Key aus der Umgebungsvariable (wird beim Start gesetzt)
+    """Sucht im Web."""
     return TavilySearchResults(api_key=os.environ.get("TAVILY_API_KEY")).run(q)
 
-@tool("pdf_reader_tool")
-def pdf_reader_tool(pdf_path: str):
-    """Extrahiert Text aus PDF-Dateien für die Analyse (Cloud-kompatibel)."""
+@tool("pdf_tool")
+def pdf_tool(path: str):
+    """Liest PDFs."""
     try:
-        # Bereinigung des Pfades
-        clean_path = pdf_path.strip().replace('"', '').replace("'", "").replace('\\', '/')
-        if not os.path.exists(clean_path):
-            return f"Fehler: Datei unter {clean_path} nicht gefunden."
-            
-        reader = PdfReader(clean_path)
-        content = ""
-        for i, page in enumerate(reader.pages):
-            if i > 5: break # Token-Limit Schutz
-            content += page.extract_text()
-            
-        return f"PDF-Inhalt (Auszug):\n\n{content[:4000]}"
-    except Exception as e:
-        return f"Fehler beim PDF-Lesen: {str(e)}"
+        r = PdfReader(path.strip().replace('"', '').replace('\\', '/'))
+        return "".join([p.extract_text() for p in r.pages[:5]])[:3000]
+    except Exception as e: return str(e)
 
-# =================================================================
-# 5. AGENTEN-LOGIK & ABRECHNUNG
-# =================================================================
-if st.button("🚀 Auftrag zahlungspflichtig starten (0,02 €)"):
-    if st.session_state.bal < 0.02: 
-        st.error("Guthaben leer! Bitte lade dein Konto auf.")
-    elif not gk or not tk: 
-        st.warning("Bitte gib beide API-Keys in der Sidebar ein.")
-    elif not prompt: 
-        st.warning("Bitte gib einen Auftrag für Calvin ein.")
+if st.button("🚀 Auftrag starten (0,02 €)"):
+    if st.session_state.bal < 0.02: st.error("Guthaben leer!")
+    elif not gk or not tk: st.warning("Keys fehlen!")
     else:
-        with st.status("Calvin kontaktiert die Cloud-Engine...", expanded=True):
-            # API Keys in die Umgebung laden
-            os.environ["GROQ_API_KEY"] = gk
-            os.environ["TAVILY_API_KEY"] = tk
-            
+        with st.status("Verarbeitung..."):
+            os.environ["GROQ_API_KEY"], os.environ["TAVILY_API_KEY"] = gk, tk
             try:
-                # Das modernste Groq-Modell
                 llm = LLM(model="groq/llama-3.3-70b-versatile")
+                agent = Agent(role='Analyst', goal=prompt, backstory='AI Executive', tools=[search_tool, pdf_tool], llm=llm)
+                res = Crew(agents=[agent], tasks=[Task(description=prompt, expected_output="Bericht", agent=agent)]).kickoff()
                 
-                # Agenten-Setup
-                calvin_analyst = Agent(
-                    role='Senior Executive Consultant', 
-                    goal=f'Löse die Aufgabe präzise: {prompt}', 
-                    backstory='Du bist ein hochbezahlter Analyst. Du nutzt Internet-Suche und PDF-Daten für perfekte Ergebnisse.',
-                    tools=[search_tool, pdf_reader_tool], 
-                    llm=llm,
-                    allow_delegation=False
-                )
-                
-                # Auftrag definieren
-                analysis_task = Task(
-                    description=f"Kundenauftrag: {prompt}", 
-                    expected_output="Ein professioneller, gut strukturierter Ergebnisbericht.", 
-                    agent=calvin_analyst
-                )
-                
-                # Crew starten
-                calvin_crew = Crew(agents=[calvin_analyst], tasks=[analysis_task])
-                final_result = calvin_crew.kickoff()
-                
-                # --- ABRECHNUNG ÜBER SUPABASE ---
                 st.session_state.bal -= 0.02
                 update_bal(st.session_state.user, st.session_state.bal)
-                
-                st.subheader("Ergebnis von Calvin:")
-                st.info(final_result.raw)
-                st.toast("Auftrag abgeschlossen: 0,02 € wurden abgerechnet.", icon="💸")
-                
-            except Exception as e:
-                st.error(f"Ein technischer Fehler ist aufgetreten: {e}")
-
-st.divider()
-st.caption("Calvin Enterprise v2.2 | Powered by Groq & Supabase | 24/7 Cloud Access")
+                st.info(res.raw)
+            except Exception as e: st.error(f"Fehler: {e}")
