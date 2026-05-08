@@ -96,9 +96,8 @@ if not st.session_state.logged_in:
                     if success: st.success(msg)
                     else: st.error(msg)
     st.stop()
-
 # =================================================================
-# 3. SIDEBAR (Dashboard & Stripe) - STABILE VERSION
+# 3. SIDEBAR (Dashboard & Stripe) - CLEAN SAAS VERSION
 # =================================================================
 with st.sidebar:
     st.title(f"👋 {st.session_state.user}")
@@ -114,20 +113,16 @@ with st.sidebar:
     st.subheader("💳 Guthaben aufladen")
     
     # --- STRIPE SETUP ---
-    # Dein Link bleibt gleich
     stripe_base_url = "https://buy.stripe.com/test_7sYfZg6aF7iX0kkeKN1oI00" 
-    
-    # Wir füllen nur die E-Mail bei Stripe voraus, damit du sie nicht tippen musst.
-    # Die Rückleitung steuerst du jetzt direkt im Stripe Dashboard.
     checkout_url = f"{stripe_base_url}?prefilled_email={st.session_state.user}"
     
     st.link_button("🚀 10,00 € aufladen", checkout_url, use_container_width=True)
-    st.caption("Nach der Zahlung bitte wieder einloggen.")
+    st.caption("Sichere Aufladung via Stripe")
 
     st.divider()
-    # API Keys & Logout
-    gk = st.text_input("Groq API Key", type="password")
-    tk = st.text_input("Tavily API Key", type="password")
+    
+    # WICHTIG: Die Keys werden hier NICHT angezeigt. 
+    # Sie werden erst im Moment des Klicks auf "Start" geladen (siehe Engine-Bereich).
     
     if st.button("Abmelden", use_container_width=True): 
         st.session_state.logged_in = False
@@ -162,15 +157,13 @@ def pdf_tool(path: str):
 if st.button("🚀 Auftrag starten (0,02 €)"):
     if st.session_state.bal < 0.02:
         st.error("Guthaben leer! Bitte lade dein Konto auf.")
-    elif not gk or not tk:
-        st.warning("Bitte gib deine Groq- und Tavily-Keys in der Sidebar ein.")
-    elif not prompt:
-        st.warning("Bitte gib einen Auftrag ein.")
     else:
-        with st.status("Calvin arbeitet...", expanded=True):
-            os.environ["GROQ_API_KEY"] = gk
-            os.environ["TAVILY_API_KEY"] = tk
-            try:
+        with st.status("Calvin arbeitet..."):
+            # Hier greifen wir auf die Namen zu, die du im Dashboard eingetragen hast
+            os.environ["GROQ_API_KEY"] = st.secrets["GROQ_API_KEY"]
+            os.environ["TAVILY_API_KEY"] = st.secrets["TAVILY_API_KEY"]
+            
+         try:
                 llm = LLM(model="groq/llama-3.3-70b-versatile")
                 
                 calvin = Agent(
