@@ -159,4 +159,3 @@ if st.button("🚀 Auftrag starten (0,02 €)"):
 
 
 
-Deine Landingpage-Texte und das PDF-Feature sind bereit. Wie gefällt dir der neue Look?
