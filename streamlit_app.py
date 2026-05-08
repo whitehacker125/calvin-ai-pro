@@ -157,11 +157,6 @@ if st.button("🚀 Auftrag starten (0,02 €)"):
                 
             except Exception as e: st.error(f"Fehler: {e}")
 
-### Was ist neu?
-1.  **Landingpage:** Wenn du nicht eingeloggt bist, sieht man jetzt einen großen Hero-Text und eine saubere Login-Maske. Das wirkt direkt professioneller.
-2.  **`st.file_uploader`:** Direkt über dem Prompt-Feld gibt es jetzt die Büroklammer zum Hochladen.
-3.  **`tempfile` Logik:** Da die KI einen "Pfad" zur Datei braucht, speichern wir die PDF-Daten kurz in einem versteckten Ordner auf dem Streamlit-Server, damit der Agent darauf zugreifen kann. Nach der Analyse wird die Datei automatisch gelöscht.
-4.  **Prompt-Injektion:** Wenn du eine Datei hochlädst, sagt die App der KI automatisch: "Hey, da ist ein Dokument, schau da mal rein."
 
 
 Deine Landingpage-Texte und das PDF-Feature sind bereit. Wie gefällt dir der neue Look?
