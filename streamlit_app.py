@@ -47,15 +47,61 @@ def update_bal(email, val):
 # =================================================================
 st.set_page_config(page_title="Calvin Pro Dashboard", layout="centered")
 
-# CSS für professionellen Login-Look
+# =================================================================
+# 2. LOGIN-SYSTEM (VERFEINERTES DESIGN)
+# =================================================================
+st.set_page_config(page_title="Calvin Pro Dashboard", layout="centered")
+
+# Freundliches, helles/modernes Design
 st.markdown("""
     <style>
-    .stApp { background-color: #0e1117; }
-    h1 { color: #deff9a; text-align: center; font-family: 'Helvetica', sans-serif; }
-    .stButton>button { width: 100%; border-radius: 20px; }
+    /* Hintergrund auf ein sanftes Hellgrau/Blau setzen */
+    .stApp { 
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    }
+    
+    /* Die Login-Box weiß und abgehoben (Card-Style) */
+    [data-testid="stForm"] {
+        background-color: white;
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+        border: none;
+    }
+    
+    /* Überschrift in dunklem Blau für bessere Lesbarkeit */
+    h1 { 
+        color: #1e293b; 
+        text-align: center; 
+        font-family: 'Helvetica Neue', sans-serif;
+        font-weight: 800;
+        padding-bottom: 20px;
+    }
+    
+    /* Buttons professionell stylen */
+    .stButton>button { 
+        width: 100%; 
+        border-radius: 10px; 
+        background-color: #1e293b; 
+        color: white;
+        border: none;
+        height: 3em;
+    }
+    
+    /* Sekundärer Button (Zurück zur Website) */
+    .stLinkButton>a {
+        background-color: transparent !important;
+        color: #1e293b !important;
+        border: 1px solid #1e293b !important;
+        border-radius: 10px !important;
+    }
+    
+    /* Eingabefelder verschönern */
+    input {
+        border-radius: 8px !important;
+    }
     </style>
     """, unsafe_allow_html=True)
-
 if 'logged_in' not in st.session_state: st.session_state.logged_in = False
 
 if not st.session_state.logged_in:
