@@ -70,7 +70,7 @@ with st.sidebar:
     st.subheader("💳 Guthaben aufladen")
     
     # DEIN STRIPE LINK (HIER REINKOPIEREN)
-    stripe_link = "https://buy.stripe.com/DEIN_CODE" 
+    stripe_link = "https://buy.stripe.com/test_7sYfZg6aF7iX0kkeKN1oI00" 
     checkout_url = f"{stripe_link}?prefilled_email={st.session_state.user}"
     
     st.link_button("🚀 10,00 € aufladen", checkout_url, use_container_width=True)
