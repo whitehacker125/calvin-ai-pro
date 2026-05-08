@@ -163,6 +163,5 @@ if st.button("🚀 Auftrag starten (0,02 €)"):
 3.  **`tempfile` Logik:** Da die KI einen "Pfad" zur Datei braucht, speichern wir die PDF-Daten kurz in einem versteckten Ordner auf dem Streamlit-Server, damit der Agent darauf zugreifen kann. Nach der Analyse wird die Datei automatisch gelöscht.
 4.  **Prompt-Injektion:** Wenn du eine Datei hochlädst, sagt die App der KI automatisch: "Hey, da ist ein Dokument, schau da mal rein."
 
-Probier es mal aus – lade eine PDF hoch und frag Calvin: "Fasse dieses Dokument zusammen und vergleiche es mit aktuellen Online-News." Das ist pure Magie!
 
 Deine Landingpage-Texte und das PDF-Feature sind bereit. Wie gefällt dir der neue Look?
