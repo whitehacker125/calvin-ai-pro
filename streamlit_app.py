@@ -122,7 +122,7 @@ with st.sidebar:
     
     # Stripe Link mit Prefill der E-Mail
     # Ersetze 'DEIN_STRIPE_LINK' durch deinen echten Payment-Link
-    stripe_base_url = "https://buy.stripe.com/DEIN_STRIPE_LINK" 
+    stripe_base_url = "https://buy.stripe.com/test_7sYfZg6aF7iX0kkeKN1oI00" 
     checkout_url = f"{stripe_base_url}?prefilled_email={st.session_state.user}"
     
     st.link_button("🚀 10,00 € aufladen", checkout_url, use_container_width=True)
