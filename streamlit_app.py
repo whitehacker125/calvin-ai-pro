@@ -29,47 +29,35 @@ def update_bal(email, val):
     if supabase:
         supabase.table("profiles").update({"balance": float(val)}).eq("email", email.lower().strip()).execute()
 
-# =================================================================
-# 2. LANDING PAGE & AUTH UI
-# =================================================================
-st.set_page_config(page_title="Calvin Pro | AI Analyst", layout="wide")
 
-# CSS für den Landingpage-Look
-st.markdown("""
-    <style>
-    .main { background-color: #0e1117; }
-    .hero-text { text-align: center; padding: 50px 0; }
-    .hero-title { font-size: 60px; font-weight: 800; color: #deff9a; margin-bottom: 10px; }
-    .hero-sub { font-size: 24px; color: #daffde; margin-bottom: 30px; }
-    .stButton>button { border-radius: 50px; }
-    </style>
-    """, unsafe_allow_html=True)
+# =================================================================
+# 2. SAUBERE LOGIN-MASKE (Für Redirect von Landingpage)
+# =================================================================
+st.set_page_config(page_title="Calvin Pro Dashboard", layout="centered") # 'centered' sieht beim Login besser aus
 
 if 'logged_in' not in st.session_state: st.session_state.logged_in = False
 
 if not st.session_state.logged_in:
-    # --- LANDING PAGE SECTION ---
-    st.markdown('<div class="hero-text">', unsafe_allow_html=True)
-    st.markdown('<p class="hero-title">CALVIN <span>PRO</span></p>', unsafe_allow_html=True)
-    st.markdown('<p class="hero-sub">Dein persönlicher KI-Business-Analyst. 24/7 einsatzbereit.</p>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+    # Nur ein dezentes Logo oder Titel
+    st.title("🔐 Calvin Pro Login")
     
-    col1, col2, col3 = st.columns([1,2,1])
-    with col2:
-        tab1, tab2 = st.tabs(["🔑 Einloggen", "📝 Registrieren"])
-        with tab1:
-            with st.form("login"):
-                u = st.text_input("E-Mail").lower().strip()
-                p = st.text_input("Passwort", type="password")
-                if st.form_submit_button("Anmelden", use_container_width=True):
-                    data = get_user(u)
-                    if data and str(data["password"]) == p:
-                        st.session_state.logged_in, st.session_state.user = True, u
-                        st.session_state.bal = float(data["balance"])
-                        st.rerun()
-                    else: st.error("Login fehlgeschlagen.")
-        with tab2:
-            st.info("Registrierung ist aktuell über das Admin-Team möglich.")
+    # Der Stripe-Success-Banner bleibt natürlich
+    if st.query_params.get("payment") == "success":
+        st.success("🎉 Aufladung erfolgreich! Bitte logge dich ein.")
+
+    tab1, tab2 = st.tabs(["🔑 Einloggen", "📝 Registrieren"])
+    with tab1:
+        with st.form("login"):
+            u = st.text_input("E-Mail").lower().strip()
+            p = st.text_input("Passwort", type="password")
+            if st.form_submit_button("Anmelden", use_container_width=True):
+                data = get_user(u)
+                if data and str(data["password"]) == p:
+                    st.session_state.logged_in, st.session_state.user = True, u
+                    st.session_state.bal = float(data["balance"])
+                    st.rerun()
+                else: st.error("Daten nicht korrekt.")
+    # ... hier den Registrierungs-Tab lassen ...
     st.stop()
 
 # =================================================================
