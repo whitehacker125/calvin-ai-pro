@@ -153,7 +153,6 @@ def pdf_tool(path: str):
     except Exception as e:
         return f"Fehler beim PDF-Lesen: {str(e)}"
 
-# START-BUTTON
 if st.button("🚀 Auftrag starten (0,02 €)"):
     if st.session_state.bal < 0.02:
         st.error("Guthaben leer! Bitte lade dein Konto auf.")
@@ -163,7 +162,7 @@ if st.button("🚀 Auftrag starten (0,02 €)"):
             os.environ["GROQ_API_KEY"] = st.secrets["GROQ_API_KEY"]
             os.environ["TAVILY_API_KEY"] = st.secrets["TAVILY_API_KEY"]
             
-         try:
+            try:
                 llm = LLM(model="groq/llama-3.3-70b-versatile")
                 
                 calvin = Agent(
