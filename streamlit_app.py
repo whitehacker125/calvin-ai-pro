@@ -47,6 +47,11 @@ def update_bal(email, val):
 # =================================================================
 st.set_page_config(page_title="Calvin Pro Business", layout="wide")
 
+# Prüfe, ob wir gerade von Stripe kommen
+query_params = st.query_params
+if query_params.get("payment") == "success":
+    st.success("🎉 Zahlung erfolgreich! Bitte logge dich ein, um dein neues Guthaben zu sehen.")
+
 if 'logged_in' not in st.session_state: st.session_state.logged_in = False
 if 'user' not in st.session_state: st.session_state.user = ""
 if 'bal' not in st.session_state: st.session_state.bal = 0.0
