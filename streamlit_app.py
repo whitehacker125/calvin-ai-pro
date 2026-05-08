@@ -98,7 +98,7 @@ if not st.session_state.logged_in:
     st.stop()
 
 # =================================================================
-# 3. SIDEBAR (Dashboard & Stripe)
+# 3. SIDEBAR (Dashboard & Stripe) - STABILE VERSION
 # =================================================================
 with st.sidebar:
     st.title(f"👋 {st.session_state.user}")
@@ -113,17 +113,23 @@ with st.sidebar:
     st.divider()
     st.subheader("💳 Guthaben aufladen")
     
-    # --- DYNAMISCHER STRIPE LINK ---
-    # Ersetze den Link durch deinen echten Stripe Payment Link
+    # --- STRIPE SETUP ---
+    # Dein Link bleibt gleich
     stripe_base_url = "https://buy.stripe.com/test_7sYfZg6aF7iX0kkeKN1oI00" 
+    
+    # Wir füllen nur die E-Mail bei Stripe voraus, damit du sie nicht tippen musst.
+    # Die Rückleitung steuerst du jetzt direkt im Stripe Dashboard.
     checkout_url = f"{stripe_base_url}?prefilled_email={st.session_state.user}"
     
     st.link_button("🚀 10,00 € aufladen", checkout_url, use_container_width=True)
+    st.caption("Nach der Zahlung bitte wieder einloggen.")
 
     st.divider()
+    # API Keys & Logout
     gk = st.text_input("Groq API Key", type="password")
     tk = st.text_input("Tavily API Key", type="password")
-    if st.button("Abmelden"): 
+    
+    if st.button("Abmelden", use_container_width=True): 
         st.session_state.logged_in = False
         st.rerun()
 
