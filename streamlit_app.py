@@ -161,7 +161,7 @@ with st.sidebar:
 
     st.divider()
     st.subheader("💳 Guthaben aufladen")
-    stripe_link = "https://buy.stripe.com/test_7sYfZg6aF7iX0kkeKN1oI00" 
+    stripe_link = "https://buy.stripe.com/3cI3cv3Cl18Y86CcXD6EU00" 
     st.link_button("🚀 10,00 € aufladen", f"{stripe_link}?prefilled_email={st.session_state.user}", use_container_width=True)
 
     if st.button("Abmelden"): 
